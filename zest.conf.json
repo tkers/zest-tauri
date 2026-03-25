@@ -1,0 +1,8 @@
+{
+  "input": "src/data.json",
+  "title": "Zest Game",
+  "color": "#8a60be",
+  "autoplay": true,
+  "keymap": "arrows-zx",
+  "plugins": ["gamepad.js", "seamless.js", "tauri.js"]
+}

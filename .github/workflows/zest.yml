@@ -1,0 +1,19 @@
+name: Create Zest bundle
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+jobs:
+  bundle:
+    runs-on: 'ubuntu-latest'
+    name: 'Run Zest bundler'
+    steps:
+      - uses: actions/checkout@v6
+      - run: npx -y github:tkers/zest bundle -- -o index.html
+      - uses: actions/upload-artifact@v7
+        with:
+          name: 'Zest Game (HTML)'
+          path: 'index.html'
+          archive: true

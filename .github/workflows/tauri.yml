@@ -1,0 +1,121 @@
+name: Compile Tauri apps
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  CARGO_INCREMENTAL: 0
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # - name: 'MacOS (Silicon)'
+          #   platform: 'macos-latest'
+          #   target: 'aarch64-apple-darwin'
+          - name: 'MacOS (Intel)'
+            platform: 'macos-latest'
+            target: 'x86_64-apple-darwin'
+          # - name: 'MacOS (Universal)'
+          #   platform: 'macos-latest'
+          #   target: 'universal-apple-darwin'
+          - name: 'Linux'
+            platform: 'ubuntu-latest'
+            target: 'x86_64-unknown-linux-gnu'
+          - name: 'Windows'
+            platform: 'windows-latest'
+            target: 'x86_64-pc-windows-msvc'
+
+    runs-on: ${{ matrix.platform }}
+    name: 'Compile for ${{ matrix.name }}'
+    steps:
+      - uses: actions/checkout@v6
+      - name: Setup NodeJS
+        uses: actions/setup-node@v6
+        with:
+          node-version: lts/*
+      - name: Install Node dependencies
+        run: npm install
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target == 'universal-apple-darwin' && 'aarch64-apple-darwin,x86_64-apple-darwin' || matrix.target }}
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+      - name: Install Linux dependencies
+        if: matrix.platform == 'ubuntu-latest'
+        run: |
+          sudo apt update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+
+      # - name: Setup Tauri
+      #   run: |
+      #     npx -y @tauri-apps/cli init --ci
+      #     rm src-tauri/tauri.conf.json
+      #     mv tauri.conf.json src-tauri/tauri.conf.json
+      #     rm src-tauri/capabilities/default.json
+      #     mv capabilities.json src-tauri/capabilities/default.json
+
+      - name: Read configuration
+        id: tauri_config
+        shell: bash
+        run: |
+          json=$(cat src-tauri/tauri.conf.json | tr -d '\n' | tr -d '\r')
+          echo "json=$json" >> $GITHUB_OUTPUT
+      - name: Parse configuration
+        shell: bash
+        run: |
+          echo "MAIN_BINARY=${{ fromJSON(steps.tauri_config.outputs.json).mainBinaryName }}" >> $GITHUB_ENV
+          echo "PRODUCT_NAME=${{ fromJSON(steps.tauri_config.outputs.json).productName }}" >> $GITHUB_ENV
+
+      - name: Run Zest bundler
+        run: mkdir web && npm run zest bundle -- -o web/index.html
+
+      - name: Generate icons
+        run: npm run tauri icon -- src/icon.png
+
+      - name: Compile Tauri app
+        run: npm run tauri build -- --target ${{ matrix.target }}
+
+      - name: Gather artifacts
+        shell: bash
+        run: |
+          mkdir dist
+
+          if [[ "$RUNNER_OS" == "Windows" ]]; then
+            cp src-tauri/target/${{ matrix.target }}/release/*.exe dist/
+          fi
+
+          if [[ "$RUNNER_OS" == "Linux" ]]; then
+            cp src-tauri/target/${{ matrix.target }}/release/${{env.MAIN_BINARY}} dist/
+            cp src-tauri/target/${{ matrix.target }}/release/bundle/appimage/*.AppImage dist/
+            cp src-tauri/target/${{ matrix.target }}/release/bundle/deb/*.deb dist/
+          fi
+
+          if [[ "$RUNNER_OS" == "macOS" ]]; then
+            cp -r src-tauri/target/${{ matrix.target }}/release/bundle/macos/*.app dist/
+          fi
+
+      - name: Zip artifacts (nix)
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          cd dist && zip -r "../${{env.PRODUCT_NAME}} - ${{ matrix.name }}.zip" .
+
+      - name: Zip artifacts (win)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          Compress-Archive -Path "dist\*" -DestinationPath "${{env.PRODUCT_NAME}} - ${{ matrix.name }}.zip"
+
+      - name: Upload build
+        uses: actions/upload-artifact@v7
+        with:
+          name: '${{env.PRODUCT_NAME}} - ${{ matrix.name }}'
+          path: '${{env.PRODUCT_NAME}} - ${{ matrix.name }}.zip'
+          archive: false

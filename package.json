@@ -1,0 +1,14 @@
+{
+  "name": "zest-game",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "scripts": {
+    "tauri": "tauri",
+    "zest": "zest"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2",
+    "zest": "github:tkers/zest"
+  }
+}
