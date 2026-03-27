@@ -1,0 +1,21 @@
+name: Compile all Tauri apps
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ['v*']
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        target:
+          - mac
+          - windows
+          - linux
+
+    name: Run Tauri workflow
+    uses: tkers/zest-tauri/.github/workflows/tauri.yml@main
+    with:
+      target: ${{ matrix.target }}

@@ -1,0 +1,27 @@
+name: Compile one Tauri app
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        required: true
+        type: choice
+        options:
+          - MacOS (Intel)
+          - MacOS (Silicon)
+          - MacOS (Univeral)
+          - Linux
+          - Windows
+
+jobs:
+  build:
+    name: Run Tauri workflow
+    uses: tkers/zest-tauri/.github/workflows/tauri.yml@main
+    with:
+      target: "${{ 
+        inputs.target == 'MacOS (Intel)' && 'mac' ||
+        inputs.target == 'MacOS (Silicon)' && 'mac_arm' ||
+        inputs.target == 'MacOS (Univeral)' && 'mac_universal' ||
+        inputs.target == 'Linux' && 'linux' ||
+        inputs.target == 'Windows' && 'windows' 
+      }}"
