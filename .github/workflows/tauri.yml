@@ -16,14 +16,16 @@ jobs:
     runs-on: "${{ 
       startsWith(inputs.target, 'mac') && 'macos-latest' ||
       inputs.target == 'windows' && 'windows-latest' ||
-      inputs.target == 'linux' && 'ubuntu-latest' 
+      inputs.target == 'linux_arm' && 'ubuntu-24.04-arm' ||
+      inputs.target == 'linux' && 'ubuntu-latest'
     }}"
     name: "Compile for ${{ 
       inputs.target == 'mac' && 'MacOS (Intel)' ||
       inputs.target == 'mac_arm' && 'MacOS (Silicon)' ||
       inputs.target == 'mac_universal' && 'MacOS (Universal)' ||
       inputs.target == 'windows' && 'Windows' ||
-      inputs.target == 'linux' && 'Linux'
+      inputs.target == 'linux' && 'Linux (Intel)' ||
+      inputs.target == 'linux_arm' && 'Linux (ARM)'
     }}"
     env:
       OSNAME: "${{ 
@@ -31,15 +33,18 @@ jobs:
         inputs.target == 'mac_arm' && 'MacOS (Silicon)' ||
         inputs.target == 'mac_universal' && 'MacOS (Universal)' ||
         inputs.target == 'windows' && 'Windows' ||
-        inputs.target == 'linux' && 'Linux'
+        inputs.target == 'linux' && 'Linux (Intel)' ||
+        inputs.target == 'linux_arm' && 'Linux (ARM)'
       }}"
       ARCH: "${{ 
         inputs.target == 'mac' && 'x86_64-apple-darwin' ||
         inputs.target == 'mac_arm' && 'aarch64-apple-darwin' ||
         inputs.target == 'mac_universal' && 'universal-apple-darwin' ||
         inputs.target == 'windows' && 'x86_64-pc-windows-msvc' ||
-        inputs.target == 'linux' && 'x86_64-unknown-linux-gnu'
+        inputs.target == 'linux' && 'x86_64-unknown-linux-gnu' ||
+        inputs.target == 'linux_arm' && 'aarch64-unknown-linux-gnu'
       }}"
+      PKG_CONFIG_ALLOW_CROSS: ${{ inputs.target == 'linux_arm' && '1' || '0' }}
     steps:
       - uses: actions/checkout@v6
       - name: Setup NodeJS

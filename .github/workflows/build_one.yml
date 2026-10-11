@@ -10,7 +10,8 @@ on:
           - MacOS (Intel)
           - MacOS (Silicon)
           - MacOS (Univeral)
-          - Linux
+          - Linux (Intel)
+          - Linux (ARM)
           - Windows
 
 jobs:
@@ -22,6 +23,7 @@ jobs:
         inputs.target == 'MacOS (Intel)' && 'mac' ||
         inputs.target == 'MacOS (Silicon)' && 'mac_arm' ||
         inputs.target == 'MacOS (Univeral)' && 'mac_universal' ||
-        inputs.target == 'Linux' && 'linux' ||
+        inputs.target == 'Linux (Intel)' && 'linux' ||
+        inputs.target == 'Linux (ARM)' && 'linux_arm' ||
         inputs.target == 'Windows' && 'windows' 
       }}"
